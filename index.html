@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e7c72">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Class Tracker">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Teaching Income Tracker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: one narrow column. Month progress first, today's counters second, daily log third, settings last. */
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --fg:#16211f; --muted:#586663; --line:#dbe1dc; --track:#e3e8e4;
+  --bc:#0e7c72; --bm:#c2620a; --good:#1d7a3b; --warn:#b4531a; --btn:#eef2ef;
+  --head:"Space Grotesk","Inter",system-ui,sans-serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1514; --surface:#18201e; --fg:#e8eeeb; --muted:#9aa8a4; --line:#2a3532; --track:#26302d;
+    --bc:#3cc4b4; --bm:#f0a05a; --good:#6fcf8c; --warn:#f0a05a; --btn:#222c29; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --surface:#18201e; --fg:#e8eeeb; --muted:#9aa8a4; --line:#2a3532; --track:#26302d;
+  --bc:#3cc4b4; --bm:#f0a05a; --good:#6fcf8c; --warn:#f0a05a; --btn:#222c29; color-scheme:dark;
+}
+:root{color-scheme:light}
+html{-webkit-text-size-adjust:100%}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,.num{font-family:var(--head)}
+h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
+h2{font-size:13px;margin:0 0 10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--bc);outline-offset:2px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nav{display:flex;align-items:center;gap:6px}
+.nav .m{min-width:128px;text-align:center;font-weight:600}
+.ib{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.note{font-size:13px;color:var(--muted);margin:0}
+.warnbar{font-size:13px;background:var(--surface);border:1px dashed var(--warn);color:var(--warn);border-radius:10px;padding:8px 12px}
+.big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big .num{font-size:40px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.big .of{color:var(--muted)}
+.bar{position:relative;height:14px;background:var(--track);border-radius:7px;margin:14px 0 8px;overflow:visible;display:flex}
+.bar .seg{height:100%}
+.bar .seg.bc{background:var(--bc);border-radius:7px 0 0 7px}
+.bar .seg.bm{background:var(--bm)}
+.bar .tick{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--fg)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.stat .l{font-size:12px;color:var(--muted)}
+.stat .v{font-family:var(--head);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .s{font-size:12px;color:var(--muted)}
+.good{color:var(--good)} .bad{color:var(--warn)}
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0;padding-top:0}
+.row .t{font-weight:600} .row .u{font-size:12px;color:var(--muted)}
+.ctl{display:flex;align-items:center;gap:10px}
+.ctl button{width:48px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--btn);font-size:24px;line-height:1}
+.ctl button.plus{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.ctl .c{min-width:36px;text-align:center;font-family:var(--head);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.sw{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}
+.todayline{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:14px}
+.todayline b{font-family:var(--head);font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto;max-height:340px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th{font-size:12px;font-weight:600;color:var(--muted);text-align:right;padding:6px 8px;position:sticky;top:0;background:var(--surface)}
+td{padding:8px;text-align:right;border-top:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+tr.rest td:first-child{color:var(--muted)}
+tr.today td:first-child{font-weight:600}
+.empty{padding:14px 0;color:var(--muted);font-size:14px}
+details summary{cursor:pointer;font-weight:600}
+.set{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:14px}
+.set label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.set input[type=number]{height:42px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:0 12px;color:var(--fg);font-size:16px;min-width:0}
+.set .chk{flex-direction:row;align-items:center;gap:10px;color:var(--fg);font-size:14px}
+.set .chk input{width:20px;height:20px}
+@media (prefers-reduced-motion:no-preference){.bar .seg{transition:width .3s ease}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>Teaching Income Tracker</h1>
+    <div class="nav">
+      <button class="ib" id="prev" aria-label="Previous month">&#8249;</button>
+      <div class="m" id="monthLabel"></div>
+      <button class="ib" id="next" aria-label="Next month">&#8250;</button>
+    </div>
+  </div>
+
+  <div id="warn" class="warnbar" hidden></div>
+
+  <section class="panel" aria-labelledby="h-month">
+    <h2 id="h-month">This month</h2>
+    <div class="big"><span class="num" id="earned">₱0</span><span class="of" id="goalOf"></span></div>
+    <div class="bar" id="bar"><div class="seg bc" id="segBc"></div><div class="seg bm" id="segBm"></div><div class="tick" id="tick" title="Target pace through today"></div></div>
+    <div class="legend"><span><i style="background:var(--bc)"></i>BrightCHAMPS <b id="lgBc"></b></span><span><i style="background:var(--bm)"></i>Bizmates <b id="lgBm"></b></span><span><i style="background:var(--warn)"></i>Penalties <b id="lgPen"></b></span><span><i style="background:var(--fg)"></i>Target pace through today</span></div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-today">
+    <h2 id="h-today">Today</h2>
+    <div class="rows" id="rows"></div>
+    <div class="todayline" id="todayline"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-log">
+    <h2 id="h-log">Daily log</h2>
+    <div class="scroll"><table id="log"></table></div>
+  </section>
+
+  <section class="panel">
+    <details>
+      <summary>Rates and goal</summary>
+      <div class="set">
+        <label for="s-goal">Monthly goal (₱)<input id="s-goal" type="number" inputmode="decimal" min="0" step="100"></label>
+        <label for="s-fx">Pesos per US dollar<input id="s-fx" type="number" inputmode="decimal" min="0" step="0.01"></label>
+        <label for="s-r60">BrightCHAMPS, $ per 60-min class<input id="s-r60" type="number" inputmode="decimal" min="0" step="0.05"></label>
+        <label for="s-bm">Bizmates, ₱ per 25-min lesson<input id="s-bm" type="number" inputmode="decimal" min="0" step="1"></label>
+        <label for="s-pl">Penalty, $ per late minute (1 to 10)<input id="s-pl" type="number" inputmode="decimal" min="0" step="0.01"></label>
+        <label for="s-pb">Penalty, $ for joining over 10 min late<input id="s-pb" type="number" inputmode="decimal" min="0" step="0.5"></label>
+        <label for="s-pc">Penalty, $ for a cancelled class not rescheduled<input id="s-pc" type="number" inputmode="decimal" min="0" step="0.5"></label>
+        <label class="chk" for="s-sun"><input id="s-sun" type="checkbox"> Sunday is a rest day</label>
+      </div>
+      <p class="note" style="margin-top:12px">A 30-minute BrightCHAMPS class counts as half the 60-minute rate, as in the contract. Penalty amounts come from the paid-class table in the LingoCHAMPS policy and may differ for shorter classes, so confirm them with HR and change them here. Figures are before Wise fees and tax.</p>
+      <p class="note" style="margin-top:12px">Counts are saved on this phone only. Use Export now and then to keep a backup file, and Import to restore it.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <button class="ib" id="exp" style="width:auto;padding:0 16px">Export backup</button>
+        <label class="ib" for="imp" style="width:auto;padding:0 16px;display:inline-flex;align-items:center;cursor:pointer">Import backup</label>
+        <input id="imp" type="file" accept="application/json,.json" hidden>
+      </div>
+    </details>
+  </section>
+</main>
+
+<script>
+(function(){
+  var DEF={goal:32000,fx:62,rate60:3.9,bm:85,sundayOff:true,penLate:0.12,penBig:18,penCxl:6};
+  var FIELDS=['bc60','bc30','bm','late','big','cxl'];
+  var settings=Object.assign({},DEF), days={}, db=null, loaded=false;
+  var view=new Date(); view=new Date(view.getFullYear(),view.getMonth(),1);
+  var dirty={}, ver={}, timers={}, chains={}, sDirty=false, sTimer=null, sChain=Promise.resolve();
+  var LS='teaching-income-tracker:v1';
+  function $(id){return document.getElementById(id);}
+  function pad(n){return String(n).padStart(2,'0');}
+  function keyOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+  function peso(n){return '₱'+Math.round(n).toLocaleString('en-PH');}
+  function num(n){return Number(n)||0;}
+  var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function bcE(d){return (num(d.bc60)*settings.rate60+num(d.bc30)*settings.rate60/2)*settings.fx;}
+  function bmE(d){return num(d.bm)*settings.bm;}
+  function penE(d){return (num(d.late)*settings.penLate+num(d.big)*settings.penBig+num(d.cxl)*settings.penCxl)*settings.fx;}
+  function body6(d){var o={}; FIELDS.forEach(function(f){o[f]=num(d[f]);}); return o;}
+  function isRest(dow){return settings.sundayOff && dow===0;}
+
+  function warn(msg){var w=$('warn'); if(msg){w.textContent=msg;w.hidden=false;}else{w.hidden=true;}}
+
+  /* ---------- persistence ---------- */
+  function lsSave(){try{localStorage.setItem(LS,JSON.stringify({days:days,settings:settings})); warn('');}catch(e){warn('This browser would not save your counts. Check that site data is allowed.');}}
+  function lsLoad(){try{var r=JSON.parse(localStorage.getItem(LS)||'null'); if(r){days=r.days||{}; settings=Object.assign({},DEF,r.settings||{});}}catch(e){}}
+
+  function persistDay(){lsSave();}
+  function persistSettings(){lsSave();}
+
+  /* ---------- month maths ---------- */
+  function monthList(y,m){
+    var n=new Date(y,m+1,0).getDate(), out=[];
+    for(var i=1;i<=n;i++){var dt=new Date(y,m,i); out.push({d:i,dow:dt.getDay(),key:keyOf(dt),work:!isRest(dt.getDay())});}
+    return out;
+  }
+
+  /* ---------- render ---------- */
+  function render(){
+    var now=new Date(), tk=keyOf(now);
+    var y=view.getFullYear(), m=view.getMonth();
+    $('monthLabel').textContent=MON[m]+' '+y;
+    var list=monthList(y,m);
+    var workTotal=list.filter(function(x){return x.work;}).length;
+    var prefix=y+'-'+pad(m+1);
+    var bc=0,bm=0,pen=0,active=0;
+    list.forEach(function(x){var d=days[x.key]; if(d){var a=bcE(d),b=bmE(d); bc+=a; bm+=b; pen+=penE(d); if(a+b>0)active++;}});
+    var gross=bc+bm, earned=gross-pen, goal=settings.goal;
+    $('earned').textContent=(earned<0?'−':'')+peso(Math.abs(earned));
+    $('goalOf').textContent='of '+peso(goal)+' goal, after penalties';
+    var pc=goal>0?Math.max(0,Math.min(100,earned/goal*100)):0;
+    var bcw=gross>0?pc*bc/gross:0;
+    $('segBc').style.width=bcw+'%'; $('segBm').style.width=(pc-bcw)+'%';
+    $('lgBc').textContent=peso(bc); $('lgBm').textContent=peso(bm); $('lgPen').textContent=pen>0?'−'+peso(pen):peso(0);
+
+    var inCur=(y===now.getFullYear()&&m===now.getMonth());
+    var past=(new Date(y,m+1,1)<=new Date(now.getFullYear(),now.getMonth(),1));
+    var elapsed=list.filter(function(x){return x.work&&x.key<=tk;}).length;
+    if(past) elapsed=workTotal; if(!inCur&&!past) elapsed=0;
+    var expected=workTotal?goal*elapsed/workTotal:0;
+    $('tick').style.left='calc('+Math.min(100,goal?expected/goal*100:0)+'% - 1px)';
+    var remDays=0;
+    if(inCur) remDays=list.filter(function(x){return x.work&&x.key>=tk;}).length;
+    else if(!past) remDays=workTotal;
+    var left=Math.max(0,goal-earned);
+    var perDay=remDays>0?left/remDays:0;
+    var perClass=settings.rate60*settings.fx;
+    var diff=earned-expected;
+    var todayHas=inCur&&days[tk]&&(bcE(days[tk])+bmE(days[tk]))>0;
+    var futureDays=remDays-(inCur&&todayHas&&!isRest(now.getDay())?1:0);
+    var proj=active>0?earned+(earned/active)*Math.max(0,inCur?futureDays:remDays):null;
+    var s='';
+    s+=stat('Still to earn',left>0?peso(left):'Goal reached',remDays>0?remDays+' working days left':(past?'month finished':''),left>0?'':'good');
+    s+=stat('Needed per working day',remDays>0&&left>0?peso(perDay):'—',remDays>0&&left>0?'about '+(perDay/perClass).toFixed(1)+' BrightCHAMPS classes alone':'');
+    s+=stat('Vs target pace',(inCur||past)?(diff>=0?'+':'−')+peso(Math.abs(diff)):'—',(inCur||past)?(diff>=0?'ahead':'behind'):'',(inCur||past)?(diff>=0?'good':'bad'):'');
+    s+=stat('Month-end projection',proj!==null?peso(proj):'—',proj!==null?'at your average so far':'starts after your first day');
+    $('stats').innerHTML=s;
+
+    renderToday(now,tk,workTotal);
+    renderLog(list,tk,prefix);
+    syncSettings();
+    $('next').disabled=false;
+  }
+  function stat(l,v,s,cls){return '<div class="stat"><div class="l">'+l+'</div><div class="v '+(cls||'')+'">'+v+'</div><div class="s">'+(s||'&nbsp;')+'</div></div>';}
+
+  function renderToday(now,tk,workTotal){
+    var d=days[tk]||{};
+    var rows=[
+      {k:'bc60',t:'BrightCHAMPS 60-min class',u:peso(settings.rate60*settings.fx)+' each',c:'var(--bc)'},
+      {k:'bc30',t:'BrightCHAMPS 30-min class',u:peso(settings.rate60*settings.fx/2)+' each',c:'var(--bc)'},
+      {k:'bm',t:'Bizmates 25-min lesson',u:peso(settings.bm)+' each',c:'var(--bm)'},
+      {head:'Penalties, only if they happen'},
+      {k:'late',t:'Late join, minutes (1 to 10)',u:'−'+peso(settings.penLate*settings.fx)+' per minute',c:'var(--warn)'},
+      {k:'big',t:'Late join over 10 minutes',u:'−'+peso(settings.penBig*settings.fx)+' each',c:'var(--warn)'},
+      {k:'cxl',t:'Cancelled, not rescheduled',u:'−'+peso(settings.penCxl*settings.fx)+' each',c:'var(--warn)'}
+    ];
+    $('rows').innerHTML=rows.map(function(r){
+      if(r.head) return '<h2 style="margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line)">'+r.head+'</h2>';
+      return '<div class="row"><div><div class="t"><span class="sw" style="background:'+r.c+'"></span>'+r.t+'</div><div class="u">'+r.u+'</div></div>'+
+        '<div class="ctl"><button data-k="'+r.k+'" data-d="-1" aria-label="One less '+r.t+'">&minus;</button><span class="c">'+num(d[r.k])+'</span><button class="plus" data-k="'+r.k+'" data-d="1" aria-label="One more '+r.t+'">+</button></div></div>';
+    }).join('');
+    var tot=bcE(d)+bmE(d)-penE(d), target=workTotal?settings.goal/workTotal:0;
+    var label=DOW[now.getDay()]+' '+now.getDate()+' '+MON[now.getMonth()].slice(0,3);
+    $('todayline').innerHTML='<span>'+label+(isRest(now.getDay())?' (rest day)':'')+'</span><span>Today <b>'+peso(tot)+'</b> of a <b>'+peso(target)+'</b> daily average</span>';
+  }
+
+  function renderLog(list,tk,prefix){
+    var rows=list.filter(function(x){return x.key<=tk||days[x.key];}).reverse();
+    var any=rows.some(function(x){return days[x.key];});
+    var h='<thead><tr><th>Day</th><th>BC 60</th><th>BC 30</th><th>Biz</th><th>Pen</th><th>Net</th></tr></thead><tbody>';
+    if(!any){h+='<tr><td colspan="6" class="empty" style="text-align:left">Nothing logged yet. Tap + under Today after each class and this table fills in.</td></tr>';}
+    else{
+      rows.forEach(function(x){
+        var d=days[x.key]||{};
+        h+='<tr class="'+(x.work?'':'rest ')+(x.key===tk?'today':'')+'"><td>'+DOW[x.dow]+' '+x.d+'</td><td>'+num(d.bc60)+'</td><td>'+num(d.bc30)+'</td><td>'+num(d.bm)+'</td><td>'+(penE(d)>0?'−'+peso(penE(d)):'—')+'</td><td>'+(days[x.key]?peso(bcE(d)+bmE(d)-penE(d)):'—')+'</td></tr>';
+      });
+    }
+    $('log').innerHTML=h+'</tbody>';
+  }
+
+  var focused=null;
+  function syncSettings(){
+    var map={'s-goal':settings.goal,'s-fx':settings.fx,'s-r60':settings.rate60,'s-bm':settings.bm,'s-pl':settings.penLate,'s-pb':settings.penBig,'s-pc':settings.penCxl};
+    Object.keys(map).forEach(function(id){var el=$(id); if(document.activeElement!==el) el.value=map[id];});
+    $('s-sun').checked=!!settings.sundayOff;
+  }
+
+  /* ---------- events ---------- */
+  $('rows').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-k]'); if(!b) return;
+    var key=keyOf(new Date()), f=b.getAttribute('data-k'), dl=parseInt(b.getAttribute('data-d'),10);
+    var nd=body6(days[key]||{});
+    nd[f]=Math.max(0,nd[f]+dl);
+    days[key]=nd; render(); persistDay(key);
+  });
+  $('prev').addEventListener('click',function(){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();});
+  $('next').addEventListener('click',function(){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();});
+  [['s-goal','goal'],['s-fx','fx'],['s-r60','rate60'],['s-bm','bm'],['s-pl','penLate'],['s-pb','penBig'],['s-pc','penCxl']].forEach(function(p){
+    $(p[0]).addEventListener('input',function(){
+      var v=parseFloat(this.value); if(isNaN(v)||v<0) return;
+      settings[p[1]]=v; render(); persistSettings();
+    });
+  });
+  $('s-sun').addEventListener('change',function(){settings.sundayOff=this.checked;render();persistSettings();});
+
+  /* ---------- backup ---------- */
+  $('exp').addEventListener('click',function(){
+    try{
+      var blob=new Blob([JSON.stringify({days:days,settings:settings},null,2)],{type:'application/json'});
+      var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+      a.download='class-tracker-backup-'+keyOf(new Date())+'.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+    }catch(e){warn('Could not create the backup file.');}
+  });
+  $('imp').addEventListener('change',function(){
+    var f=this.files&&this.files[0]; if(!f) return;
+    var r=new FileReader();
+    r.onload=function(){
+      try{
+        var o=JSON.parse(r.result);
+        if(!o||typeof o.days!=='object') throw new Error('bad');
+        days=o.days||{}; settings=Object.assign({},DEF,o.settings||{});
+        lsSave(); render(); warn('');
+      }catch(e){warn('That file is not a Class Tracker backup.');}
+    };
+    r.readAsText(f); this.value='';
+  });
+
+  /* ---------- start ---------- */
+  lsLoad(); render();
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
+  }
+})();
+</script>
+</body>
+</html>
